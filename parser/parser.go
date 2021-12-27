@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/token"
@@ -11,6 +12,8 @@ type Parser struct {
 
 	curToken  token.Token
 	peekToken token.Token
+
+	errors []string
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -20,6 +23,15 @@ func New(l *lexer.Lexer) *Parser {
 	p.nextToken()
 
 	return p
+}
+
+func (p *Parser) Errors() []string {
+	return p.errors
+}
+
+func (p *Parser) peekError(t token.TokenType) {
+	msg := fmt.Sprintf("expected next token to be %s, got %s instead", t, p.peekToken.Type)
+	p.errors = append(p.errors, msg)
 }
 
 func (p *Parser) nextToken() {
@@ -32,10 +44,10 @@ func (p *Parser) parseIdentifier() *ast.Identifier {
 	// 	Token token.Token
 	// 	Value string
 	// }
-	if p.peekToken.Type != token.IDENT {
+	if !p.expectPeek(token.IDENT) {
 		return nil
 	}
-	p.nextToken()
+
 	return &ast.Identifier{
 		Token: p.curToken,
 		Value: p.curToken.Literal,
@@ -55,6 +67,7 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 		p.nextToken()
 		return true
 	}
+	p.peekError(t)
 	return false
 }
 
@@ -96,7 +109,6 @@ func (p *Parser) parseStatement() ast.Statement {
 
 func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}
-	program.Statements = []ast.Statement{}
 
 	for !p.curTokenIs(token.EOF) {
 		stmt := p.parseStatement()
