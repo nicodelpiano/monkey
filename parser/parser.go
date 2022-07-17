@@ -199,7 +199,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	// In the loop’s body the method tries to find infixParseFns for the next token.
 	// If it finds such a function, it calls it, passing in the expression returned by a prefixParseFn as an argument.
 	// And it does all this again and again until it encounters a token that has a higher precedence.
-	if !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
 			return leftExp
