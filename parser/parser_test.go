@@ -109,3 +109,39 @@ return 993322;
 		}
 	}
 }
+
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParseErrors(t, p)
+
+	// That’s a lot of lines, but it’s mostly just grunt work. We parse our input `foobar;`, check the parser for errors,
+	// make an assertion about the number of statements in the *ast.Program node
+	// and then check that the only statement in program.Statements is an *ast.ExpressionStatement.
+	// Then we check that the *ast.ExpressionStatement.Expression is an *ast.Identifier.
+	// Finally we check that our identifier has the correct value of "foobar".
+	if len(program.Statements) != 1 {
+		t.Fatalf("program has not enough statements. got=%d", len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+
+	ident, ok := stmt.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("exp not *ast.Identifier. got=%T", stmt.Expression)
+	}
+
+	if ident.Value != "foobar" {
+		t.Fatalf("identifier value not %s. got=%s", "foobar", ident.Value)
+	}
+
+	if ident.TokenLiteral() != "foobar" {
+		t.Fatalf("identifier token literal not %s. got=%s", "foobar", ident.TokenLiteral())
+	}
+}
