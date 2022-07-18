@@ -98,6 +98,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefix(token.TRUE, p.parseBoolean)
+	p.registerPrefix(token.FALSE, p.parseBoolean)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
@@ -144,6 +146,10 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 	}
 	p.peekError(t)
 	return false
+}
+
+func (p *Parser) parseBoolean() ast.Expression {
+	return &ast.Boolean{Token: p.curToken, Value: p.curTokenIs(token.TRUE)}
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
@@ -213,6 +219,20 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	return leftExp
 }
 
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	expression := &ast.InfixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Left:     left,
+	}
+
+	precedence := p.curPrecedence()
+	p.nextToken()
+	expression.Right = p.parseExpression(precedence)
+
+	return expression
+}
+
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
 
@@ -264,20 +284,6 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 	p.nextToken()
 
 	expression.Right = p.parseExpression(PREFIX)
-
-	return expression
-}
-
-func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
-	expression := &ast.InfixExpression{
-		Token:    p.curToken,
-		Operator: p.curToken.Literal,
-		Left:     left,
-	}
-
-	precedence := p.curPrecedence()
-	p.nextToken()
-	expression.Right = p.parseExpression(precedence)
 
 	return expression
 }
